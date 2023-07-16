@@ -11,6 +11,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+imges/
 questions/
 db.sqlite3/
 pictures/
