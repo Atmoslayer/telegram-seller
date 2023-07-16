@@ -59,7 +59,7 @@ Docker должен быть установлен и запущен.
 ```commandline
 docker build . -t seller-bot
 ```
-Для создания контейнеров используйте `docker run` с указанием имени контейнера через `--name`, указанием пути к .env файлу через `--env-file` 
+Для создания контейнеров  в каталоге проекта используйте `docker run` с указанием имени контейнера через `--name`, указанием пути к .env файлу через `--env-file` 
 и аргументом для запуска бота:
 ```commandline
 docker run --name seller-bot --env-file=./.env -it seller-bot python telegram_bot.py
