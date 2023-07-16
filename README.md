@@ -2,6 +2,8 @@
 Проект содержит чат бота, продающего рыбу через сервис [elasticpath](https://www.elasticpath.com/).
 Посредством запросов бот получает от сервиса всю необходимую информацию и отображает её пользователю.
 ## Пример работы бота
+![](https://github.com/Atmoslayer/telegram-seller/blob/main/fish-shop.gif)
+
 [Рабочая версия проекта](https://t.me/atmoslayer_seller_bot)
 ## Как установить
 ### Для elasticpath
