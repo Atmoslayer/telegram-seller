@@ -10,8 +10,6 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRe
     KeyboardButton
 from email_validate import validate
 
-from textwrap import dedent
-from inspect import cleandoc
 from moltin_api import get_products, get_access_token, \
     get_product_quantity, get_price_books, get_price_book, get_prices, get_image, add_to_cart, delete_from_cart, \
     update_product_quantity, get_cart_items, update_customer, create_customer
@@ -120,127 +118,115 @@ def send_products(update, context):
 
 
 def handle_product(update, context):
-    try:
-        redis_client = context.bot_data['redis_client']
-        access_token = get_access_token(redis_client)
-        query = update.callback_query
-        message_id = query.message.message_id
-        chat_id = update.effective_chat.id
-        product_id = query.data
-        products_quantity = get_product_quantity(access_token, product_id)
+    redis_client = context.bot_data['redis_client']
+    access_token = get_access_token(redis_client)
+    query = update.callback_query
+    message_id = query.message.message_id
+    chat_id = update.effective_chat.id
+    product_id = query.data
+    products_quantity = get_product_quantity(access_token, product_id)
 
-        keyboard_buttons = []
+    keyboard_buttons = []
 
-        if products_quantity == 0:
-            stock_message = 'К сожалению, данный товар закончился'
+    if products_quantity == 0:
+        stock_message = 'К сожалению, данный товар закончился'
 
-        else:
-            keyboard_buttons = [
-                {
-                    'name': '1 кг',
-                    'data': f'1 {product_id}'
-                }
-            ]
-            stock_message = f'{products_quantity} кг на складе'
+    else:
+        keyboard_buttons = [
+            {
+                'name': '1 кг',
+                'data': f'1 {product_id}'
+            }
+        ]
+        stock_message = f'{products_quantity} кг на складе'
 
-        if products_quantity >= 5:
-            keyboard_buttons.append(
-                {
-                    'name': '5 кг',
-                    'data': f'5 {product_id}'
-                }
-            )
-        if products_quantity >= 10:
-            keyboard_buttons.append(
-                {
-                    'name': '10 кг',
-                    'data': f'10 {product_id}'
-                }
-            )
-
-        keyboard_buttons.append(SHOP_BACK_BUTTON)
-        keyboard_buttons.append(CART_BUTTON)
-        price_books = get_price_books(access_token)
-        price_book = get_price_book(access_token, price_books)
-        prices = get_prices(price_book)
-
-        products = context.bot_data['products']
-
-        for product in products:
-            if product['id'] == product_id:
-                message = (
-                    f'{product["name"]}\n\n'
-                    f'${prices[product["sku"]]} за кг\n\n'
-                    f'{stock_message}\n\n'
-                    f'{product["description"]}'
-                )
-                current_product = product
-
-        reply_markup = get_inline_keyboard(keyboard_buttons, 3)
-        image = get_image(access_token, current_product)
-
-        context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image,
-            caption=message,
-            reply_markup=reply_markup
+    if products_quantity >= 5:
+        keyboard_buttons.append(
+            {
+                'name': '5 кг',
+                'data': f'5 {product_id}'
+            }
         )
-        context.bot.delete_message(chat_id, message_id)
+    if products_quantity >= 10:
+        keyboard_buttons.append(
+            {
+                'name': '10 кг',
+                'data': f'10 {product_id}'
+            }
+        )
 
-        return State.PRODUCT_HANDLED
-    except HTTPError as http_error:
-        logging.error(http_error.response.text)
+    keyboard_buttons.append(SHOP_BACK_BUTTON)
+    keyboard_buttons.append(CART_BUTTON)
+    price_books = get_price_books(access_token)
+    price_book = get_price_book(access_token, price_books)
+    prices = get_prices(price_book)
+
+    products = context.bot_data['products']
+
+    for product in products:
+        if product['id'] == product_id:
+            message = (
+                f'{product["name"]}\n\n'
+                f'${prices[product["sku"]]} за кг\n\n'
+                f'{stock_message}\n\n'
+                f'{product["description"]}'
+            )
+            current_product = product
+
+    reply_markup = get_inline_keyboard(keyboard_buttons, 3)
+    image = get_image(access_token, current_product)
+
+    context.bot.send_photo(
+        chat_id=chat_id,
+        photo=image,
+        caption=message,
+        reply_markup=reply_markup
+    )
+    context.bot.delete_message(chat_id, message_id)
+
+    return State.PRODUCT_HANDLED
 
 
 def handle_purchase(update, context):
-    try:
-        redis_client = context.bot_data['redis_client']
-        access_token = get_access_token(redis_client)
-        query = update.callback_query
-        chat_id = update.effective_chat.id
-        message_id = query.message.message_id
-        product_quantity, product_id = query.data.split(' ')
-        cart = add_to_cart(access_token, product_id, product_quantity, chat_id)
-        update_product_quantity(access_token, product_id, product_quantity, 'allocate')
-        display_cart(cart, message_id, chat_id, context)
+    redis_client = context.bot_data['redis_client']
+    access_token = get_access_token(redis_client)
+    query = update.callback_query
+    chat_id = update.effective_chat.id
+    message_id = query.message.message_id
+    product_quantity, product_id = query.data.split(' ')
+    cart = add_to_cart(access_token, product_id, product_quantity, chat_id)
+    update_product_quantity(access_token, product_id, product_quantity, 'allocate')
+    display_cart(cart, message_id, chat_id, context)
 
-        return State.PURCHASE_HANDLED
-    except HTTPError as http_error:
-        logging.error(http_error.response.text)
+    return State.PURCHASE_HANDLED
 
 
 def handle_cart(update, context):
-    try:
-        redis_client = context.bot_data['redis_client']
-        access_token = get_access_token(redis_client)
-        query = update.callback_query
-        chat_id = update.effective_chat.id
-        message_id = query.message.message_id
-        cart = get_cart_items(access_token, chat_id)
-        display_cart(cart, message_id, chat_id, context)
+    redis_client = context.bot_data['redis_client']
+    access_token = get_access_token(redis_client)
+    query = update.callback_query
+    chat_id = update.effective_chat.id
+    message_id = query.message.message_id
+    cart = get_cart_items(access_token, chat_id)
+    display_cart(cart, message_id, chat_id, context)
 
-        return State.PURCHASE_HANDLED
-    except HTTPError as http_error:
-        logging.error(http_error.response.text)
+    return State.PURCHASE_HANDLED
 
 
 def handle_removal(update, context):
-    try:
-        redis_client = context.bot_data['redis_client']
-        access_token = get_access_token(redis_client)
-        query = update.callback_query
-        chat_id = update.effective_chat.id
-        message_id = query.message.message_id
+    redis_client = context.bot_data['redis_client']
+    access_token = get_access_token(redis_client)
+    query = update.callback_query
+    chat_id = update.effective_chat.id
+    message_id = query.message.message_id
 
-        product_quantity, product_id = query.data.split(' ')
-        cart_item_id = context.user_data[product_id]
-        cart = delete_from_cart(access_token, cart_item_id, chat_id)
-        update_product_quantity(access_token, product_id, product_quantity, 'deallocate')
-        display_cart(cart, message_id, chat_id, context)
+    product_quantity, product_id = query.data.split(' ')
+    cart_item_id = context.user_data[product_id]
+    cart = delete_from_cart(access_token, cart_item_id, chat_id)
+    update_product_quantity(access_token, product_id, product_quantity, 'deallocate')
+    display_cart(cart, message_id, chat_id, context)
 
-        return State.PURCHASE_HANDLED
-    except HTTPError as http_error:
-        logging.error(http_error.response.text)
+    return State.PURCHASE_HANDLED
 
 
 def display_cart(cart, message_id,  chat_id, context):
@@ -416,38 +402,39 @@ def handle_phone_number_text(update, context):
 
 
 def handle_contact(update, context):
-    try:
-        redis_client = context.bot_data['redis_client']
-        access_token = get_access_token(redis_client)
-        chat_id = update.effective_chat.id
-        phone_number = update.message.contact.phone_number
-        user_name = context.user_data['user_name']
-        email = context.user_data['email']
+    redis_client = context.bot_data['redis_client']
+    access_token = get_access_token(redis_client)
+    chat_id = update.effective_chat.id
+    phone_number = update.message.contact.phone_number
+    user_name = context.user_data['user_name']
+    email = context.user_data['email']
 
-        customer_id = redis_client.get(f'id {chat_id}')
-        if customer_id:
-            customer = update_customer(access_token, user_name, phone_number, email, customer_id)
-        else:
-            customer = create_customer(access_token, user_name, phone_number, email)
+    customer_id = redis_client.get(f'id {chat_id}')
+    if customer_id:
+        customer = update_customer(access_token, user_name, phone_number, email, customer_id)
+    else:
+        customer = create_customer(access_token, user_name, phone_number, email)
 
-        customer_id = customer['data']['id']
+    customer_id = customer['data']['id']
 
-        redis_client.set(f'id {chat_id}', customer_id)
+    redis_client.set(f'id {chat_id}', customer_id)
 
-        request_message_id = context.user_data['request_message_id']
+    request_message_id = context.user_data['request_message_id']
 
-        message = 'Спасибо! Ваш заказ оформлен. Скоро с Вами свяжется менеджер.'
-        reply_markup = get_inline_keyboard([PAYMENT_BACK_BUTTON], 1)
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=message,
-            reply_markup=reply_markup
-        )
-        context.bot.delete_message(chat_id, request_message_id)
+    message = 'Спасибо! Ваш заказ оформлен. Скоро с Вами свяжется менеджер.'
+    reply_markup = get_inline_keyboard([PAYMENT_BACK_BUTTON], 1)
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=message,
+        reply_markup=reply_markup
+    )
+    context.bot.delete_message(chat_id, request_message_id)
 
-        return State.ORDER_REGISTERED
-    except HTTPError as http_error:
-        logging.error(http_error.response.text)
+    return State.ORDER_REGISTERED
+
+
+def error_handler(update, context):
+    logger.error(context.error)
 
 
 def main():
@@ -584,6 +571,7 @@ def main():
         )
 
         dispatcher.add_handler(conversation_handler)
+        dispatcher.add_error_handler(error_handler)
         logger.info('The bot started')
         updater.start_polling()
         updater.idle()
