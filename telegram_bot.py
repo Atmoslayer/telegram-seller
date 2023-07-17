@@ -105,14 +105,17 @@ def send_products(update, context):
     keyboard_buttons.append(CART_BUTTON)
     message = 'Выберите продукт:'
     reply_markup = get_inline_keyboard(keyboard_buttons, 2)
-    if query:
-        message_id = query.message.message_id
-        context.bot.delete_message(chat_id, message_id)
+
     context.bot.send_message(
         chat_id=chat_id,
         text=message,
         reply_markup=reply_markup
     )
+
+    if query:
+        message_id = query.message.message_id
+        context.bot.delete_message(chat_id, message_id)
+
     return State.PRODUCTS_SENT
 
 
@@ -176,14 +179,13 @@ def handle_product(update, context):
         reply_markup = get_inline_keyboard(keyboard_buttons, 3)
         image = get_image(access_token, current_product)
 
-        context.bot.delete_message(chat_id, message_id)
-
         context.bot.send_photo(
             chat_id=chat_id,
             photo=image,
             caption=message,
             reply_markup=reply_markup
         )
+        context.bot.delete_message(chat_id, message_id)
 
         return State.PRODUCT_HANDLED
     except HTTPError as http_error:
@@ -268,12 +270,12 @@ def display_cart(cart, message_id,  chat_id, context):
         keyboard_buttons.append(PAYMENT_BUTTON)
     keyboard_buttons.append(SHOP_BACK_BUTTON)
     reply_markup = get_inline_keyboard(keyboard_buttons, 1)
-    context.bot.delete_message(chat_id, message_id)
     context.bot.send_message(
         chat_id=chat_id,
         text=message,
         reply_markup=reply_markup
     )
+    context.bot.delete_message(chat_id, message_id)
 
 
 def handle_registration(update, context):
@@ -436,12 +438,12 @@ def handle_contact(update, context):
 
         message = 'Спасибо! Ваш заказ оформлен. Скоро с Вами свяжется менеджер.'
         reply_markup = get_inline_keyboard([PAYMENT_BACK_BUTTON], 1)
-        context.bot.delete_message(chat_id, request_message_id)
         context.bot.send_message(
             chat_id=chat_id,
             text=message,
             reply_markup=reply_markup
         )
+        context.bot.delete_message(chat_id, request_message_id)
 
         return State.ORDER_REGISTERED
     except HTTPError as http_error:
