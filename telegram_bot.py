@@ -10,7 +10,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRe
     KeyboardButton
 from email_validate import validate
 
-from moltin_api_functions import get_products, get_access_token, \
+from moltin_api import get_products, get_access_token, \
     get_product_quantity, get_price_books, get_price_book, get_prices, get_image, add_to_cart, delete_from_cart, \
     update_product_quantity, get_cart_items, update_customer, create_customer
 
