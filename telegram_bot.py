@@ -65,16 +65,13 @@ PAYMENT_BUTTON = {
 }
 
 
-def get_lists_of_buttons(buttons, cols_quantity):
-    for button_number in range(0, len(buttons), cols_quantity):
-        yield buttons[button_number: button_number + cols_quantity]
-
-
 def get_inline_keyboard(buttons, cols_quantity):
     keyboard_buttons = []
     for button in buttons:
         keyboard_buttons.append(InlineKeyboardButton(button['name'], callback_data=button['data']))
-    keyboard = get_lists_of_buttons(keyboard_buttons, cols_quantity)
+    keyboard = [
+        keyboard_buttons[button_number:button_number + cols_quantity] for button_number in range(0, len(keyboard_buttons), cols_quantity)
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     return reply_markup
 
