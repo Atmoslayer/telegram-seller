@@ -1,43 +1,34 @@
 import json
 import logging
+import time
 
 import requests
 
 
-def test_token(access_token):
-    url = 'https://useast.api.elasticpath.com/v2/carts/abc'
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 401:
-        return False
-    else:
-        return True
-
-
-def get_new_token(client_id, client_secret):
-    url = 'https://useast.api.elasticpath.com/oauth/access_token'
-    data = {
-        'client_id': client_id,
-        'grant_type': 'client_credentials',
-        'client_secret': client_secret
-    }
-    response = requests.post(url, data=data)
-    response.raise_for_status()
-    new_token = response.json()['access_token']
-    logging.info('New token generated')
-    return new_token
-
-
 def get_access_token(redis_client):
+    expires_timestamp = float(redis_client.get('expires_timestamp'))
     access_token = redis_client.get('access_token')
     client_id = redis_client.get('client_id')
     client_secret = redis_client.get('client_secret')
-    is_valid_token = test_token(access_token)
-    if not is_valid_token:
-        access_token = get_new_token(client_id, client_secret)
-    redis_client.set('access_token', access_token)
+    current_timestamp = time.time()
+
+    if not expires_timestamp or current_timestamp > expires_timestamp:
+
+        url = 'https://useast.api.elasticpath.com/oauth/access_token'
+        data = {
+            'client_id': client_id,
+            'grant_type': 'client_credentials',
+            'client_secret': client_secret
+        }
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+        response_content = response.json()
+        access_token = response_content['access_token']
+        expires_timestamp = response_content['expires']
+        redis_client.set('expires_timestamp', expires_timestamp)
+        redis_client.set('access_token', access_token)
+        logging.info('New token generated')
+
     return access_token
 
 
