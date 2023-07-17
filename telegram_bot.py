@@ -10,6 +10,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRe
     KeyboardButton
 from email_validate import validate
 
+from textwrap import dedent
+from inspect import cleandoc
 from moltin_api import get_products, get_access_token, \
     get_product_quantity, get_price_books, get_price_book, get_prices, get_image, add_to_cart, delete_from_cart, \
     update_product_quantity, get_cart_items, update_customer, create_customer
@@ -163,10 +165,12 @@ def handle_product(update, context):
 
         for product in products:
             if product['id'] == product_id:
-                message = f'{product["name"]}\n\n' \
-                          f'${prices[product["sku"]]} за кг\n\n' \
-                          f'{stock_message}\n\n' \
-                          f'{product["description"]}'
+                message = (
+                    f'{product["name"]}\n\n'
+                    f'${prices[product["sku"]]} за кг\n\n'
+                    f'{stock_message}\n\n'
+                    f'{product["description"]}'
+                )
                 current_product = product
 
         reply_markup = get_inline_keyboard(keyboard_buttons, 3)
@@ -247,9 +251,11 @@ def display_cart(cart, message_id,  chat_id, context):
         product_id = product["product_id"]
         product_cost = product["meta"]["display_price"]["without_discount"]["value"]["amount"] / 100
         total_price += product_cost
-        message += f'{product_name}\n' \
-                   f'{product_quantity} кг в корзине на ' \
-                   f'${product_cost}\n\n'
+        message += (
+            f'{product_name}\n' 
+            f'{product_quantity} кг в корзине на '
+            f'${product_cost}\n\n'
+        )
         keyboard_buttons.append(
             {
                 'name': f'Удалить из корзины {product_name}',
